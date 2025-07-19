@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><title>Phone Login</title></head>
+<body>
+<h2>Phone Login</h2>
+<input type="text" id="phone" placeholder="+123456789">
+<div id="recaptcha-container"></div>
+<button onclick="sendCode()">Send Code</button>
+<input type="text" id="code" placeholder="Enter code">
+<button onclick="verifyCode()">Verify</button>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com"
+};
+firebase.initializeApp(firebaseConfig);
+
+window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+
+function sendCode() {
+  const phone = document.getElementById('phone').value;
+  firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+    .then(confirmationResult => {
+      window.confirmationResult = confirmationResult;
+      alert('Code sent!');
+    });
+}
+
+function verifyCode() {
+  const code = document.getElementById('code').value;
+  window.confirmationResult.confirm(code).then(result => {
+    result.user.getIdToken().then(idToken => {
+      fetch('/verify-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      }).then(res => res.text()).then(data => alert(data));
+    });
+  });
+}
+</script>
+</body>
+</html>
