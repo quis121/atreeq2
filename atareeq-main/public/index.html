@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>عالطريق – رحلتك تبدأ هنا</title>
+  <link rel="stylesheet" href="e2.css" />
+  <style>
+    body { font-family: 'Cairo', Arial, sans-serif; background: #f7f7fa; margin: 0; }
+    header { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 15px 0 10px 0; position: relative; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: bold; color: #007bff; margin-right: 30px; }
+    .logo img { width: 40px; height: 40px; border-radius: 50%; }
+    nav { display: inline-block; margin-right: 30px; }
+    nav a { color: #333; text-decoration: none; margin: 0 10px; font-weight: 500; }
+    nav a:hover { color: #007bff; }
+    .lang-switch { margin-left: 20px; display: inline-block; vertical-align: middle; }
+    .lang-switch button { margin-left: 3px; background: #eee; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+    .lang-switch button:hover { background: #007bff; color: #fff; }
+    .profile-icon { position: absolute; top: 15px; left: 15px; cursor: pointer; font-size: 22px; font-weight: bold; color: #333; display: none; z-index: 1001; }
+    .profile-icon:hover { color: #007bff; }
+    #profile-dropdown { display: none; position: absolute; top: 45px; left: 15px; background: white; border: 1px solid #ddd; border-radius: 5px; min-width: 120px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1002; direction: rtl; font-size: 14px; }
+    #profile-dropdown button { width: 100%; padding: 10px; border: none; background: transparent; cursor: pointer; text-align: right; color: #333; border-radius: 0; outline: none; }
+    #profile-dropdown button:hover { background-color: #007bff; color: white; }
+    main { max-width: 900px; margin: 30px auto 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 16px rgba(0,0,0,0.06); padding: 30px 20px; }
+    .hero { text-align: center; margin-bottom: 40px; }
+    .hero h1 { font-size: 2.2em; color: #007bff; margin-bottom: 10px; }
+    .hero p { color: #444; margin-bottom: 20px; }
+    .btn-group { margin: 20px 0; }
+    .btn { padding: 10px 22px; border: none; border-radius: 5px; font-size: 1em; cursor: pointer; margin: 0 5px; }
+    .btn-primary { background: #007bff; color: #fff; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-secondary { background: #eee; color: #007bff; }
+    .btn-secondary:hover { background: #007bff; color: #fff; }
+    section { margin-bottom: 40px; }
+    h2 { color: #007bff; margin-bottom: 10px; }
+    .features-grid { display: flex; gap: 20px; flex-wrap: wrap; }
+    .feature-card { background: #f1f7ff; border-radius: 8px; padding: 18px; flex: 1 1 200px; min-width: 180px; text-align: center; }
+    .feature-icon { font-size: 2em; margin-bottom: 10px; }
+    .steps-list { padding-right: 20px; }
+    .steps-list li { margin-bottom: 8px; }
+    footer { text-align: center; color: #888; padding: 18px 0 10px 0; background: #fff; border-top: 1px solid #eee; margin-top: 40px; }
+    /* Modal Styles */
+    .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);}
+    .modal-content { background-color: #fff; margin: 5% auto; padding: 25px 20px; border-radius: 8px; width: 95%; max-width: 370px; direction: rtl; position: relative; }
+    .close { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; left: 15px; top: 10px;}
+    .close:hover { color: black; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; color: #007bff; font-weight: 500; }
+    .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1em; }
+    .form-group input:focus, .form-group select:focus { border-color: #007bff; outline: none; }
+    #login-message { margin-top: 10px; font-weight: bold; color: green; word-break: break-word;}
+    #login-step1, #login-step2, #login-email { margin-bottom: 10px; }
+    #login-step2 { margin-top: 10px; }
+    #login-email label { margin-top: 8px; }
+    @media (max-width: 600px) {
+      main { padding: 10px 2vw; }
+      .features-grid { flex-direction: column; }
+      .modal-content { width: 98vw; }
+    }
+  </style>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+  <header>
+    <div class="profile-icon" id="profile-link" onclick="toggleProfileDropdown()">👤</div>
+    <div id="profile-dropdown" role="menu" aria-label="User menu">
+      <button type="button" onclick="logout()">تسجيل الخروج</button>
+    </div>
+    <div class="logo">
+      <img src="https://i.ibb.co/y1BMpfC/Versatile-Circular-Logo-for-Ride-Hailing-App.png" alt="عالطريق" />
+      <span>عالطريق</span>
+    </div>
+    <nav>
+      <a href="#features" data-key="navFeatures">المميزات</a>
+      <a href="#how-it-works" data-key="navHow">كيف يعمل</a>
+      <a href="#pricing" data-key="navPricing">الأسعار</a>
+      <a href="#contact" data-key="navContact">اتصل بنا</a>
+    </nav>
+    <div class="lang-switch">
+      <button onclick="switchLang('ar')">عربي</button>
+      <button onclick="switchLang('en')">English</button>
+      <button onclick="switchLang('he')">עִברִית</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 data-key="heading">رحلتك تبدأ هنا</h1>
+      <p data-key="subtext">طلب تاكسي خاص بسهولة وسرعة مع عالطريق. استمتع برحلات مريحة وآمنة مع سائقين محترفين.</p>
+      <div class="btn-group">
+        <button class="btn btn-primary" data-key="btnRequest" onclick="openBookingModal()">اطلب الآن</button>
+        <button id="login-btn" class="btn btn-secondary" data-key="btnLogin" onclick="openLoginModal()">تسجيل / دخول</button>
+      </div>
+    </section>
+
+    <section id="features">
+      <h2 data-key="featuresTitle">لماذا تختار عالطريق؟</h2>
+      <p data-key="featuresSub">نقدم لك أفضل تجربة حجز سيارات خاصة</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🚕</div>
+          <h3 data-key="feature1Title">حجز سريع</h3>
+          <p data-key="feature1Text">احجز رحلتك في أقل من دقيقة واحدة فقط</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3 data-key="feature4Title">تتبع مباشر</h3>
+          <p data-key="feature4Text">تتبع موقع سيارتك في الوقت الحقيقي</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how-it-works">
+      <h2 data-key="howTitle">كيف تعمل الخدمة؟</h2>
+      <p data-key="howSub">3 خطوات بسيطة لرحلتك</p>
+      <ol class="steps-list">
+        <li data-key="step1">اختر نقطة الانطلاق والوجهة</li>
+        <li data-key="step2">حدد نوع الرحلة</li>
+        <li data-key="step3">قم بتأكيد الحجز وانتظر السائق</li>
+      </ol>
+    </section>
+
+    <section id="pricing">
+      <h2 data-key="pricingTitle">الأسعار</h2>
+      <p data-key="pricingSub">نقدم لك أسعار مناسبة ومنافسة</p>
+      <p data-key="pricingNote">* الأسعار قد تختلف حسب المسافة والوقت.</p>
+    </section>
+
+    <section id="contact">
+      <h2 data-key="navContact">اتصل بنا</h2>
+      <p data-key="contactEmail">البريد الإلكتروني: alatariqhelp@gmail.com</p>
+      <p data-key="contactPhone">الهاتف: 1234-5678-009</p>
+    </section>
+  </main>
+
+  <footer>
+    <span data-key="footer">© 2025 عالطريق. جميع الحقوق محفوظة.</span>
+  </footer>
+
+  <!-- Booking Modal -->
+  <div id="booking-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+    <div class="modal-content">
+      <span class="close" onclick="closeBookingModal()" aria-label="Close booking modal">&times;</span>
+      <h2 id="bookingTitle" data-key="bookRide">حجز رحلة</h2>
+      <form id="booking-form">
+        <div class="form-group">
+          <label data-key="formPickup">نقطة الانطلاق</label>
+          <input type="text" id="pickup-input" placeholder="مثال: شارع الجامعة" required />
+        </div>
+        <div class="form-group">
+          <label data-key="formDestination">الوجهة</label>
+          <input type="text" id="destination-input" placeholder="مثال: محطة القطار" required />
+        </div>
+        <div class="form-group">
+          <label data-key="formRideType">نوع الرحلة</label>
+          <select id="ride-type-input" required>
+            <option value="" disabled selected data-key="formSelectOption">اختر نوع الرحلة</option>
+            <option value="standard" data-key="formStandard">عادي</option>
+            <option value="premium" data-key="formPremium">مميز</option>
+            <option value="group" data-key="formGroup">مجموعة</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary form-submit" data-key="formSubmit">تأكيد الحجز</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-content">
+      <span class="close" onclick="closeLoginModal()" aria-label="Close login modal">&times;</span>
+      <h2 id="loginTitle" data-key="loginTitle">تسجيل / دخول</h2>
+      <div id="login-step1">
+        <label for="login-phone" data-key="loginPhoneLabel">رقم الهاتف</label>
+        <input type="text" id="login-phone" placeholder="+1234567890" />
+        <button class="btn btn-primary" onclick="requestLoginCode()" data-key="sendCodeBtn">أرسل رمز التحقق عبر واتساب</button>
+        <div id="recaptcha-container"></div>
+      </div>
+      <div id="login-step2" style="display:none; margin-top: 15px;">
+        <label for="login-code" data-key="loginCodeLabel">أدخل رمز التحقق</label>
+        <input type="text" id="login-code" maxlength="6" />
+        <button class="btn btn-primary" onclick="verifyLoginCode()" data-key="verifyCodeBtn">تحقق من الرمز</button>
+      </div>
+      <div id="login-email" style="margin-top:15px;">
+        <label for="login-email-input">البريد الإلكتروني</label>
+        <input type="email" id="login-email-input" placeholder="you@email.com" />
+        <label for="login-password-input">كلمة المرور</label>
+        <input type="password" id="login-password-input" placeholder="******" />
+        <button class="btn btn-primary" onclick="emailLogin()">دخول بالبريد</button>
+        <button class="btn btn-secondary" onclick="emailRegister()">تسجيل جديد</button>
+      </div>
+      <div id="login-message" role="alert" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyA5n4AUu6fiopYykadLkqRjipxJjZsd6xs",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Replace with your Firebase project info
+      projectId: "YOUR_PROJECT_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    let confirmationResult = null;
+
+    // Translations for Arabic, English, Hebrew
+    const translations = {
+      ar: {
+        navFeatures: "المميزات",
+        navHow: "كيف يعمل",
+        navPricing: "الأسعار",
+        navContact: "اتصل بنا",
+        heading: "رحلتك تبدأ هنا",
+        subtext: "طلب تاكسي خاص بسهولة وسرعة مع عالطريق. استمتع برحلات مريحة وآمنة مع سائقين محترفين.",
+        btnRequest: "اطلب الآن",
+        btnLogin: "تسجيل / دخول",
+        featuresTitle: "لماذا تختار عالطريق؟",
+        featuresSub: "نقدم لك أفضل تجربة حجز سيارات خاصة",
+        feature1Title: "حجز سريع",
+        feature1Text: "احجز رحلتك في أقل من دقيقة واحدة فقط",
+        feature4Title: "تتبع مباشر",
+        feature4Text: "تتبع موقع سيارتك في الوقت الحقيقي",
+        howTitle: "كيف تعمل الخدمة؟",
+        howSub: "3 خطوات بسيطة لرحلتك",
+        step1: "اختر نقطة الانطلاق والوجهة",
+        step2: "حدد نوع الرحلة",
+        step3: "قم بتأكيد الحجز وانتظر السائق",
+        pricingTitle: "الأسعار",
+        pricingSub: "نقدم لك أسعار مناسبة ومنافسة",
+        pricingNote: "* الأسعار قد تختلف حسب المسافة والوقت.",
+        contactEmail: "البريد الإلكتروني: support@alatariq.com",
+        contactPhone: "الهاتف: 1234-5678-009",
+        footer: "© 2025 عالطريق. جميع الحقوق محفوظة.",
+        bookRide: "حجز رحلة",
+        formPickup: "نقطة الانطلاق",
+        formDestination: "الوجهة",
+        formRideType: "نوع الرحلة",
+        formSelectOption: "اختر نوع الرحلة",
+        formStandard: "عادي",
+        formPremium: "مميز",
+        formGroup: "مجموعة",
+        formSubmit: "تأكيد الحجز",
+        loginTitle: "تسجيل / دخول",
+        loginPhoneLabel: "رقم الهاتف",
+        sendCodeBtn: "أرسل رمز التحقق عبر واتساب",
+        loginCodeLabel: "أدخل رمز التحقق",
+        verifyCodeBtn: "تحقق من الرمز",
+        loginCodeSent: "تم إرسال رمز التحقق عبر واتساب. يرجى التحقق من الرسالة.",
+        loginSuccess: "تم تسجيل الدخول بنجاح!",
+        loginError: "حدث خطأ، يرجى المحاولة مرة أخرى.",
+        loginInvalidCode: "رمز غير صالح أو منتهي الصلاحية.",
+        loginPhoneRequired: "يرجى إدخال رقم الهاتف.",
+        loginCodeRequired: "يرجى إدخال رمز التحقق."
+      },
+      en: {
+        navFeatures: "Features",
+        navHow: "How It Works",
+        navPricing: "Pricing",
+        navContact: "Contact Us",
+        heading: "Your Journey Starts Here",
+        subtext: "Order a private taxi easily and quickly with Al-Tariq. Enjoy comfortable and safe rides with professional drivers.",
+        btnRequest: "Request Now",
+        btnLogin: "Sign Up / Login",
+        featuresTitle: "Why Choose Al-Tariq?",
+        featuresSub: "We offer you the best private car booking experience",
+        feature1Title: "Fast Booking",
+        feature1Text: "Book your ride in less than one minute",
+        feature4Title: "Live Tracking",
+        feature4Text: "Track your car location in real-time",
+        howTitle: "How the Service Works?",
+        howSub: "3 simple steps for your ride",
+        step1: "Choose pickup and destination points",
+        step2: "Select the ride type",
+        step3: "Confirm your booking and wait for the driver",
+        pricingTitle: "Pricing",
+        pricingSub: "We offer competitive and reasonable prices",
+        pricingNote: "* Prices may vary according to distance and time.",
+        contactEmail: "Email: support@alatariq.com",
+        contactPhone: "Phone: 1234-5678-009",
+        footer: "© 2025 Al-Tariq. All rights reserved.",
+        bookRide: "Book a Ride",
+        formPickup: "Pickup Point",
+        formDestination: "Destination",
+        formRideType: "Ride Type",
+        formSelectOption: "Select a ride type",
+        formStandard: "Standard",
+        formPremium: "Premium",
+        formGroup: "Group",
+        formSubmit: "Confirm Booking",
+        loginTitle: "Login / Sign Up",
+        loginPhoneLabel: "Phone Number",
+        sendCodeBtn: "Send Verification Code via WhatsApp",
+        loginCodeLabel: "Enter Verification Code",
+        verifyCodeBtn: "Verify Code",
+        loginCodeSent: "Verification code sent via WhatsApp. Please check your messages.",
+        loginSuccess: "Logged in successfully!",
+        loginError: "An error occurred, please try again.",
+        loginInvalidCode: "Invalid or expired code.",
+        loginPhoneRequired: "Please enter your phone number.",
+        loginCodeRequired: "Please enter the verification code."
+      },
+      he: {
+        navFeatures: "תכונות",
+        navHow: "איך זה עובד",
+        navPricing: "תמחור",
+        navContact: "צור קשר",
+        heading: "המסע שלך מתחיל כאן",
+        subtext: "הזמן מונית פרטית בקלות ובמהירות עם אל-תאריק. תהנה מנסיעות נוחות ובטוחות עם נהגים מקצועיים.",
+        btnRequest: "הזמן עכשיו",
+        btnLogin: "הרשמה / התחברות",
+        featuresTitle: "למה לבחור באל-תאריק?",
+        featuresSub: "אנו מציעים לך את חווית ההזמנה הטובה ביותר",
+        feature1Title: "הזמנה מהירה",
+        feature1Text: "הזמן את הנסיעה שלך בפחות מדקה",
+        feature4Title: "מעקב חי",
+        feature4Text: "עקוב אחרי מיקום הרכב שלך בזמן אמת",
+        howTitle: "איך השירות עובד?",
+        howSub: "3 שלבים פשוטים לנסיעה שלך",
+        step1: "בחר נקודת התחלה ויעד",
+        step2: "בחר סוג נסיעה",
+        step3: "אשר את ההזמנה והמתן לנהג",
+        pricingTitle: "תמחור",
+        pricingSub: "אנו מציעים מחירים תחרותיים והוגנים",
+        pricingNote: "* המחירים עשויים להשתנות בהתאם למרחק ולזמן.",
+        contactEmail: "אימייל: support@alatariq.com",
+        contactPhone: "טלפון: 1234-5678-009",
+        footer: "© 2025 אל-תאריק. כל הזכויות שמורות.",
+        bookRide: "הזמן נסיעה",
+        formPickup: "נקודת התחלה",
+        formDestination: "יעד",
+        formRideType: "סוג נסיעה",
+        formSelectOption: "בחר סוג נסיעה",
+        formStandard: "סטנדרט",
+        formPremium: "פרימיום",
+        formGroup: "קבוצה",
+        formSubmit: "אישור הזמנה",
+        loginTitle: "התחברות / הרשמה",
+        loginPhoneLabel: "מספר טלפון",
+        sendCodeBtn: "שלח קוד אימות בוואטסאפ",
+        loginCodeLabel: "הזן קוד אימות",
+        verifyCodeBtn: "אמת קוד",
+        loginCodeSent: "קוד האימות נשלח בוואטסאפ. אנא בדוק את ההודעה.",
+        loginSuccess: "התחברת בהצלחה!",
+        loginError: "אירעה שגיאה, אנא נסה שוב.",
+        loginInvalidCode: "קוד שגוי או שפג תוקפו.",
+        loginPhoneRequired: "אנא הזן מספר טלפון.",
+        loginCodeRequired: "אנא הזן את קוד האימות."
+      }
+    };
+
+    function switchLang(lang) {
+      if (lang === 'en') {
+        document.documentElement.lang = 'en';
+        document.documentElement.dir = 'ltr';
+      } else {
+        document.documentElement.lang = lang;
+        document.documentElement.dir = 'rtl';
+      }
+      document.querySelectorAll('[data-key]').forEach(el => {
+        const key = el.getAttribute('data-key');
+        if (translations[lang] && translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+    }
+
+    function openBookingModal() {
+      document.getElementById('booking-modal').style.display = 'block';
+    }
+    function closeBookingModal() {
+      document.getElementById('booking-modal').style.display = 'none';
+    }
+
+    function openLoginModal() {
+      document.getElementById('login-modal').style.display = 'block';
+      document.getElementById('login-step1').style.display = 'block';
+      document.getElementById('login-step2').style.display = 'none';
+      document.getElementById('login-message').textContent = '';
+      document.getElementById('login-phone').value = '';
+      document.getElementById('login-code').value = '';
+      document.getElementById('login-email-input').value = '';
+      document.getElementById('login-password-input').value = '';
+    }
+    function closeLoginModal() {
+      document.getElementById('login-modal').style.display = 'none';
+    }
+
+    function toggleProfileDropdown() {
+      const dropdown = document.getElementById('profile-dropdown');
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedInPhone');
+      updateUIForLogin(false);
+      toggleProfileDropdown();
+      alert('تم تسجيل الخروج');
+      firebase.auth().signOut();
+    }
+
+    function updateUIForLogin(isLoggedIn) {
+      const profileIcon = document.getElementById('profile-link');
+      const loginBtn = document.getElementById('login-btn');
+      if (isLoggedIn) {
+        profileIcon.style.display = 'block';
+        loginBtn.style.display = 'none';
+      } else {
+        profileIcon.style.display = 'none';
+        loginBtn.style.display = 'inline-block';
+      }
+    }
+
+    // --- Firebase Phone Auth ---
+    async function requestLoginCode() {
+      const phoneInput = document.getElementById('login-phone');
+      const phone = phoneInput.value.trim();
+      const msg = document.getElementById('login-message');
+      msg.style.color = 'red';
+
+      // Validate E.164 format
+      if (!phone || !/^\+\d{10,15}$/.test(phone)) {
+        msg.textContent = "يرجى إدخال رقم هاتف دولي صحيح يبدأ بـ +";
+        return;
+      }
+
+      // Setup reCAPTCHA
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+          size: 'invisible'
+        });
+      }
+
+      try {
+        confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
+        msg.style.color = 'green';
+        msg.textContent = translations[getCurrentLang()].loginCodeSent;
+        document.getElementById('login-step1').style.display = 'none';
+        document.getElementById('login-step2').style.display = 'block';
+      } catch (error) {
+        msg.textContent = error.message || translations[getCurrentLang()].loginError;
+      }
+    }
+
+    async function verifyLoginCode() {
+      const code = document.getElementById('login-code').value.trim();
+      const msg = document.getElementById('login-message');
+      msg.style.color = 'red';
+
+      if (!code) {
+        msg.textContent = translations[getCurrentLang()].loginCodeRequired;
+        return;
+      }
+
+      try {
+        const result = await confirmationResult.confirm(code);
+        msg.style.color = 'green';
+        msg.textContent = translations[getCurrentLang()].loginSuccess;
+        localStorage.setItem('loggedInPhone', result.user.phoneNumber);
+        updateUIForLogin(true);
+        setTimeout(() => {
+          closeLoginModal();
+          msg.textContent = '';
+        }, 1500);
+      } catch (error) {
+        msg.textContent = error.message || translations[getCurrentLang()].loginInvalidCode;
+      }
+    }
+
+    // --- Firebase Email/Password Auth ---
+    async function emailLogin() {
+      const email = document.getElementById('login-email-input').value.trim();
+      const password = document.getElementById('login-password-input').value.trim();
+      const msg = document.getElementById('login-message');
+      msg.style.color = 'red';
+
+      if (!email || !password) {
+        msg.textContent = 'يرجى إدخال البريد وكلمة المرور';
+        return;
+      }
+
+      try {
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        msg.style.color = 'green';
+        msg.textContent = 'تم تسجيل الدخول بالبريد!';
+        localStorage.setItem('loggedInPhone', userCredential.user.email);
+        updateUIForLogin(true);
+        setTimeout(() => {
+          closeLoginModal();
+          msg.textContent = '';
+        }, 1500);
+      } catch (error) {
+        msg.textContent = error.message;
+      }
+    }
+
+    async function emailRegister() {
+      const email = document.getElementById('login-email-input').value.trim();
+      const password = document.getElementById('login-password-input').value.trim();
+      const msg = document.getElementById('login-message');
+      msg.style.color = 'red';
+
+      if (!email || !password) {
+        msg.textContent = 'يرجى إدخال البريد وكلمة المرور';
+        return;
+      }
+
+      try {
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        msg.style.color = 'green';
+        msg.textContent = 'تم إنشاء الحساب وتسجيل الدخول!';
+        localStorage.setItem('loggedInPhone', userCredential.user.email);
+        updateUIForLogin(true);
+        setTimeout(() => {
+          closeLoginModal();
+          msg.textContent = '';
+        }, 1500);
+      } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+          msg.textContent = 'البريد الإلكتروني مستخدم بالفعل. استخدم زر الدخول بالبريد.';
+        } else {
+          msg.textContent = error.message;
+        }
+      }
+    }
+
+    function getCurrentLang() {
+      return document.documentElement.lang || 'ar';
+    }
+
+    window.onload = () => {
+      switchLang(getCurrentLang());
+      const loggedInPhone = localStorage.getItem('loggedInPhone');
+      updateUIForLogin(!!loggedInPhone);
+    };
+
+    window.onclick = function(event) {
+      const bookingModal = document.getElementById('booking-modal');
+      const loginModal = document.getElementById('login-modal');
+      if (event.target === bookingModal) {
+        closeBookingModal();
+      }
+      if (event.target === loginModal) {
+        closeLoginModal();
+      }
+    };
+
+    document.getElementById('booking-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const phone = localStorage.getItem('loggedInPhone');
+      const pickup = document.getElementById('pickup-input').value.trim();
+      const destination = document.getElementById('destination-input').value.trim();
+      const rideType = document.getElementById('ride-type-input').value;
+
+      if (!phone) {
+        alert('يرجى تسجيل الدخول أولاً');
+        return;
+      }
+
+      if (!pickup || !destination || !rideType) {
+        alert('يرجى ملء جميع الحقول');
+        return;
+      }
+
+      try {
+        const res = await fetch('/log-ride', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, pickup, destination, rideType })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('تم الحجز بنجاح!');
+          closeBookingModal();
+        } else {
+          alert(data.message || 'فشل في الحجز');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('حدث خطأ أثناء الحجز');
+      }
+    });
+  </script>
+
+</body>
+</html>
